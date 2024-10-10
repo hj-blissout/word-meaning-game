@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>단어 뜻 맞추기 게임</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin: 20px;
+        }
+        #input-container, #game-container, #result-container, #view-container {
+            margin-bottom: 20px;
+        }
+        input, select, button {
+            padding: 5px;
+            margin: 10px;
+        }
+        table {
+            width: 80%;
+            margin: 0 auto;
+            border-collapse: collapse;
+        }
+        table, th, td {
+            border: 1px solid black;
+            padding: 10px;
+        }
+        #word-list {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .word-item {
+            display: inline-block;
+            width: 100px;
+            text-align: center;
+            margin: 10px;
+            padding: 10px;
+            background-color: #a0e7e5;  /* 민트색 배경 */
+            border-radius: 15px;         /* 둥근 사각형 모양 */
+            color: #333;                 /* 글자색 */
+            font-weight: bold;
+            border: 2px solid #38b2ac;   /* 테두리 */
+            cursor: pointer;             /* 클릭 가능한 손 모양 커서 */
+        }
+        .word-item:hover {
+            background-color: #72d2d0;   /* 호버 시 더 짙은 민트색 */
+        }
+        #toggle-buttons {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>단어 뜻 맞추기 게임</h1>
+
+    <!-- 날짜 선택 -->
+    <div id="date-selection-container">
+        <label for="day-select">날짜 선택 (1~30일):</label>
+        <select id="day-select">
+            <option value="1">1일</option>
+            <option value="2">2일</option>
+            <option value="3">3일</option>
+            <option value="4">4일</option>
+            <option value="5">5일</option>
+            <option value="6">6일</option>
+            <option value="7">7일</option>
+            <option value="8">8일</option>
+            <option value="9">9일</option>
+            <option value="10">10일</option>
+            <option value="11">11일</option>
+            <option value="12">12일</option>
+            <option value="13">13일</option>
+            <option value="14">14일</option>
+            <option value="15">15일</option>
+            <option value="16">16일</option>
+            <option value="17">17일</option>
+            <option value="18">18일</option>
+            <option value="19">19일</option>
+            <option value="20">20일</option>
+            <option value="21">21일</option>
+            <option value="22">22일</option>
+            <option value="23">23일</option>
+            <option value="24">24일</option>
+            <option value="25">25일</option>
+            <option value="26">26일</option>
+            <option value="27">27일</option>
+            <option value="28">28일</option>
+            <option value="29">29일</option>
+            <option value="30">30일</option>
+        </select>
+        <button id="load-day-btn">날짜 로드</button>
+        <p id="word-count-message"></p>
+    </div>
+
+    <!-- 입력된 단어 리스트 -->
+    <div id="word-list"></div>
+
+    <!-- 모두 뜻 보이기/단어 보이기 버튼 -->
+    <div id="toggle-buttons">
+        <button id="show-meanings-btn">모두 뜻 보이기</button>
+        <button id="show-words-btn" disabled>모두 단어 보이기</button>
+    </div>
+
+    <!-- 단어 입력 버튼 및 폼 -->
+    <div id="input-container" style="display: none;">
+        <h2>단어와 뜻 입력 (최소 5개, 최대 40개)</h2>
+        <form id="word-form">
+            <input type="text" id="word-input" placeholder="영어 단어" required>
+            <input type="text" id="meaning-input" placeholder="뜻" required>
+            <button type="button" id="add-word-btn">추가</button>
+            <p id="count-message"></p>
+            <button type="submit" id="save-btn" disabled>저장하기</button>
+        </form>
+    </div>
+
+    <script>
+        let selectedDay = 1;  // 선택된 날짜
+        let words = {};       // 현재 날짜에 입력된 단어들
+        let wordCount = 0;    // 현재 날짜에 입력된 단어 수
+        let showingMeanings = false;  // 뜻을 보여주고 있는지 여부
+
+        const wordInput = document.getElementById('word-input');
+        const meaningInput = document.getElementById('meaning-input');
+        const wordListDiv = document.getElementById('word-list');
+        const countMessage = document.getElementById('count-message');
+        const wordCountMessage = document.getElementById('word-count-message');
+        const saveBtn = document.getElementById('save-btn');
+        const inputContainer = document.getElementById('input-container');
+        const showMeaningsBtn = document.getElementById('show-meanings-btn');
+        const showWordsBtn = document.getElementById('show-words-btn');
+
+        // 날짜 선택 시 처리
+        document.getElementById('load-day-btn').addEventListener('click', function () {
+            selectedDay = document.getElementById('day-select').value;
+            loadWordsForSelectedDay(selectedDay);
+        });
+
+        // 단어 입력 처리
+        document.getElementById('add-word-btn').addEventListener('click', function () {
+            const word = wordInput.value.trim();
+            const meaning = meaningInput.value.trim();
+
+            if (word && meaning) {
+                if (wordCount < 40) {
+                    words[word] = meaning;
+                    wordCount++;
+
+                    wordInput.value = '';
+                    meaningInput.value = '';
+
+                    updateWordList();
+                    countMessage.textContent = `현재 입력된 단어 수: ${wordCount}/40`;
+
+                    if (wordCount >= 5) {
+                        saveBtn.disabled = false;
+                    }
+
+                    if (wordCount === 40) {
+                        alert("최대 40개의 단어를 입력하셨습니다.");
+                    }
+                } else {
+                    alert("40개 이상의 단어는 입력할 수 없습니다.");
+                }
+            } else {
+                alert("단어와 뜻을 모두 입력하세요.");
+            }
+        });
+
+        // 단어 리스트를 5개씩 한 줄에 표시하는 함수 (단어 클릭 시 뜻/단어 전환)
+        function updateWordList() {
+            wordListDiv.innerHTML = '';
+            const wordKeys = Object.keys(words);
+
+            wordKeys.forEach((word, index) => {
+                const wordItem = document.createElement('span');
+                wordItem.classList.add('word-item');
+                wordItem.textContent = word;
+                wordItem.dataset.word = word;  // 원래 단어 저장
+                wordItem.dataset.meaning = words[word];  // 뜻 저장
+
+                // 단어 클릭 시 뜻과 단어 전환 기능
+                wordItem.addEventListener('click', function () {
+                    if (wordItem.textContent === wordItem.dataset.word) {
+                        wordItem.textContent = wordItem.dataset.meaning;
+                    } else {
+                        wordItem.textContent = wordItem.dataset.word;
+                    }
+                });
+
+                wordListDiv.appendChild(wordItem);
+            });
+        }
+
+        // 모두 뜻 보이기 버튼 클릭 시
+        showMeaningsBtn.addEventListener('click', function () {
+            const wordItems = document.querySelectorAll('.word-item');
+            wordItems.forEach(wordItem => {
+                wordItem.textContent = wordItem.dataset.meaning;
+            });
+            showingMeanings = true;
+            toggleButtonState();
+        });
+
+        // 모두 단어 보이기 버튼 클릭 시
+        showWordsBtn.addEventListener('click', function () {
+            const wordItems = document.querySelectorAll('.word-item');
+            wordItems.forEach(wordItem => {
+                wordItem.textContent = wordItem.dataset.word;
+            });
+            showingMeanings = false;
+            toggleButtonState();
+        });
+
+        // 버튼 상태 업데이트 함수 (모두 뜻 보이기/단어 보이기)
+        function toggleButtonState() {
+            if (showingMeanings) {
+                showMeaningsBtn.disabled = true;
+                showWordsBtn.disabled = false;
+            } else {
+                showMeaningsBtn.disabled = false;
+                showWordsBtn.disabled = true;
+            }
+        }
+
+        // 단어와 뜻을 로컬 저장소에 저장하는 함수
+        function saveWordsToLocalStorage(day) {
+            localStorage.setItem(`words-day-${day}`, JSON.stringify(words));
+            alert(`${day}일의 단어와 뜻이 저장되었습니다!`);
+        }
+
+        // 단어 저장 버튼 클릭 처리
+        document.getElementById('word-form').addEventListener('submit', function (event) {
+            event.preventDefault();
+            if (wordCount >= 5 && wordCount <= 40) {
+                saveWordsToLocalStorage(selectedDay);
+            } else {
+                alert("단어는 최소 5개 이상 입력해야 합니다.");
+            }
+        });
+
+        // 선택된 날짜에 저장된 단어를 로드하는 함수
+        function loadWordsForSelectedDay(day) {
+            words = JSON.parse(localStorage.getItem(`words-day-${day}`)) || {};
+            wordCount = Object.keys(words).length;
+
+            updateWordList();
+            wordCountMessage.textContent = `${day}일에 저장된 단어 수: ${wordCount}개`;
+
+            saveBtn.disabled = wordCount < 5;
+
+            // 단어 입력 폼 표시
+            inputContainer.style.display = 'block';
+        }
+    </script>
+</body>
+</html>
